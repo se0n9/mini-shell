@@ -63,8 +63,19 @@ void eval(char *cmdline){
 
 /* builtin - */
 int builtin_command(char **argv){
-    if(!strcmp(argv[0], "quit")){
+    if(!strcmp(argv[0], "quit") || !strcmp(argv[0], "exit") || !strcmp(argv[0], "logout")){
         exit(0);
+    }
+    if(!strcmp(argv[0], "cd")){
+        char *path = argv[1];
+        if(path == NULL){
+            path = getenv("HOME");
+            chdir(path);
+        }
+        if(chdir(path) < 0){
+            perror("cd_error");
+        }
+        return 1;
     }
     if(!strcmp(argv[0], "&")){
         return 1;
