@@ -4,6 +4,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <dirent.h>
 #define MAXLINE 8192
 #define MAXARGS 128
 
@@ -11,6 +14,8 @@
 void eval(char *cmdline);
 int parseline(char *buf, char **argv);
 int builtin_command(char **argv);
+int myDIR_info(const char *dir);
+void print_file_info(char *fullpath, char *filename);
 
 extern char **environ; // Defined by libc
 
@@ -61,6 +66,37 @@ void eval(char *cmdline){
     }
 }
 
+void print_file_info(char *fullpath, char *filename){
+    struct stat file_stat;
+    struct tm *t;
+    char type;
+    if(stat(fullpath, &file_stat) < 0){
+        perror("stat error");
+        return;
+    }
+    if(S_ISDIR(file_stat.st_mode)) type = 'd'; // 디렉토리인 경우
+    else if(S_ISREG(file_stat.st_mode)) type = 'f'; // 일반 파일인 경우
+    else if(S_ISLNK(file_stat.st_mode)) type = 'l';
+    else{
+        type = '-';
+    }
+    t = localtime(&file_stat.st_mtime);
+    printf("%c  %lld  %d-%d-%d-%d-%d  %o  %s\n", type, (long long)file_stat.st_size, t->tm_year+1900, t->tm_mon+1, t->tm_mday, t->tm_hour, t->tm_min, file_stat.st_mode & 0777, filename);
+    
+}
+
+int myDIR_info(const char *dir){
+    DIR *dp = opendir(dir);
+    struct dirent *dep;
+    while((dep = readdir(dp)) != NULL){
+        char fullpath[1024];
+        sprintf(fullpath, "%s/%s", dir, dep->d_name);
+        print_file_info(fullpath, dep->d_name);
+    }
+    closedir(dp);
+    return 1;
+}
+
 /* builtin - */
 int builtin_command(char **argv){
     if(!strcmp(argv[0], "quit") || !strcmp(argv[0], "exit") || !strcmp(argv[0], "logout")){
@@ -74,6 +110,18 @@ int builtin_command(char **argv){
         }
         if(chdir(path) < 0){
             perror("cd_error");
+        }
+        return 1;
+    }
+    if(!strcmp(argv[0], "DIR")){
+        char *path = argv[1];
+        if(path == NULL){
+            printf("DIR error: path required\n");
+            return 1;
+        }
+        int flag = myDIR_info(path);
+        if(flag != 1){
+            perror("DIR error");
         }
         return 1;
     }
