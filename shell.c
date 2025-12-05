@@ -16,8 +16,10 @@ extern char **environ; // Defined by libc
 
 int main(){
     char cmdline[MAXLINE];
+    signal(SIGINT, SIG_IGN);
+    signal(SIGTSTP, SIG_IGN);
     while(1){
-        printf("> ");
+        printf("%% ");
         fgets(cmdline, MAXLINE, stdin);
         if(feof(stdin)){
             exit(0);
@@ -40,6 +42,8 @@ void eval(char *cmdline){
     }
     if(!builtin_command(argv)){
         if((pid = fork()) == 0){
+            signal(SIGINT, SIG_DFL);
+            signal(SIGTSTP, SIG_DFL);
             if(execvp(argv[0], argv) < 0){
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
