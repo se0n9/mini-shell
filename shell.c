@@ -99,17 +99,26 @@ int myDIR_info(const char *dir){
 
 /* builtin - */
 int builtin_command(char **argv){
+    char cwd[1024];
     if(!strcmp(argv[0], "quit") || !strcmp(argv[0], "exit") || !strcmp(argv[0], "logout")){
         exit(0);
     }
-    if(!strcmp(argv[0], "cd")){
+    if(!strcmp(argv[0], "cd")||!strcmp(argv[0], "CD")){
+        int flag = 0;
+        if(!strcmp(argv[0], "CD")){
+            flag = 1;
+        }
         char *path = argv[1];
         if(path == NULL){
             path = getenv("HOME");
-            chdir(path);
+            chdir(path);    
         }
         if(chdir(path) < 0){
             perror("cd_error");
+        }
+        if(flag==1){
+            getcwd(cwd, sizeof(cwd));
+            printf("%s\n",cwd);
         }
         return 1;
     }
